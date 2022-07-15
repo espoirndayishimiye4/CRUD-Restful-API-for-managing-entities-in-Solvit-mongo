@@ -1,74 +1,50 @@
-const fsPromises = require('fs').promises
-const path = require('path')
+const Trainer = require('../models/trainers')
 
-const data= {
-    trainers: require('../models/trainers.json'),
-    settrainers: function (data){this.trainers = data }
-}
-
-const getAlltrainers = (req,res)=>{
+const getAlltrainers = async (req,res)=>{
     try {
-        res.status(200).json(data.trainers)
+        try {
+            const Trainers = await Trainer.find().exec()
+            res.status(200).json(Trainers)
+        } catch (error) {
+            
+        }
     } catch (error) {
         
     }
 }
 
 const createtrainer = async (req, res)=>{
-    const newtrainer = {
-        id:data.trainers[data.trainers.length - 1].id + 1 || 1,
+    const result = await Trainer.create({
+        id:Trainer[Trainer.length - 1] + 1 || 1,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         course: req.body.course,
         salary: req.body.salary
-    };
-     
-    if(!newtrainer.firstName || !newtrainer.lastName || !newtrainer.firstName || !newtrainer.lastName){
-        return res.status(400).json({'message':'All fields are required'});
-    }
-     
-    data.settrainers([...data.trainers,newtrainer]);
-    await fsPromises.writeFile(
-        path.join(__dirname,'..','models','trainers.json'),
-        JSON.stringify(data.trainers)
-    );
-        res.status(201).json({"message":"trainer Created Succesfully"});
+    });
+     console.log(result);
+    res.status(201).json({"message":"Trainer Created Succesfully"});
 }
 const updatetrainer = async (req, res)=>{
-    const trainer = data.trainers.find(sta => sta.id === parseInt(req.body.id));
+    const trainer = await Trainer.findOne({id:req.body.id}).exec()
     if(!trainer){
-        return res.status(400).json({'message': `trainer ID ${req.body.id} not found`});
+        return res.status(400).json({'message': `Staff ID ${req.body.id} not found`});
     }
     if(req.body.firstName) trainer.firstName = req.body.firstName;
     if(req.body.lastName) trainer.lastName = req.body.lastName;
     if(req.body.course) trainer.course = req.body.course;
-    if(req.body.salary) trainer.salary = req.body.salary;
-
-    const filteredtrainer = data.trainers.filter(sta => sta.id !== parseInt(req.body.id))
-    const updatedtrainer = [...filteredtrainer, trainer];
-    data.settrainers(updatedtrainer);
-    await fsPromises.writeFile(
-        path.join(__dirname,'..','models','trainers.json'),
-        JSON.stringify(data.trainers)
-    );
+    const result = await trainer.save()
     res.status(200).json({"message":`trainer with id ${req.body.id} Updated`})
 }
 const deletetrainer = async (req, res) =>{
-    const trainer = data.trainers.find(st => st.id === parseInt(req.body.id))
-    if(!trainer) return res.status(400).json({"message":`trainer with id ${req.body.id} not found`})
-    const filteredtrainer = data.trainers.filter(stff => stff.id !== parseInt(req.body.id))
-    data.settrainers([...filteredtrainer]);
-    await fsPromises.writeFile(
-        path.join(__dirname,'..','models','trainers.json'),
-        JSON.stringify(data.trainers)
-    );
-    res.status(200).json({"message":`trainer with id ${req.body.id} deleted`}) 
+    const oneTrainer = await Trainer.deleteOne({id:req.body.id}).exec()
+    if(!oneTrainer) return res.status(400).json({"message":`Trainer with id ${req.body.id} not found`})
+    res.status(200).json({"message":`Trainer with id ${req.body.id} deleted`})
 }
 
-const getOnetrainer = (req, res) =>{
-    const trainer = data.trainers.find(st => st.id === parseInt(req.params.id))
-    if(!trainer) return res.status(400).json({"message":`trainer with id ${req.params.id} not found`})
-    res.status(200).json(trainer)
+const getOnetrainer = async (req, res) =>{
+    const oneTrainer = await Trainer.findOne({id:req.params.id}).exec()
+    if(!oneTrainer) return res.status(400).json({"message":`Trainer with id ${req.params.id} not found`})
+    res.status(200).json(oneTrainer)
 }
 
 module.exports = {getAlltrainers, createtrainer,updatetrainer,deletetrainer, getOnetrainer}
